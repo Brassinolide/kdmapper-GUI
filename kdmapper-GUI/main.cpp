@@ -101,6 +101,53 @@ string wstring2string(wstring wstr){
     return result;
 }
 
+bool mapSYS() {
+    wstream.str(L"");
+    ZeroMemory(output, sizeof output);
+    if (!isFileExists(path)) {
+        Log(L"File not exist\n");
+        return false;
+    }
+    SetUnhandledExceptionFilter(SimplestCrashHandler);
+
+    if (freeMode) {
+        Log(L"[+] Free pool memory after usage enabled" << std::endl);
+    }
+
+    if (mdlMode) {
+        Log(L"[+] Mdl memory usage enabled" << std::endl);
+    }
+
+    if (passAllocationPtr) {
+        Log(L"[+] Pass Allocation Ptr as first param enabled" << std::endl);
+    }
+
+    iqvw64e_device_handle = intel_driver::Load();
+    if (iqvw64e_device_handle == INVALID_HANDLE_VALUE) {
+        return false;
+    }
+
+    std::vector<uint8_t> raw_image = { 0 };
+    if (!utils::ReadFileToMemory(path, &raw_image)) {
+        Log(L"[-] Failed to read image to memory" << std::endl);
+        intel_driver::Unload(iqvw64e_device_handle);
+        return false;
+    }
+
+    NTSTATUS exitCode = 0;
+    if (!kdmapper::MapDriver(iqvw64e_device_handle, raw_image.data(), 0, 0, free, true, mdlMode, passAllocationPtr, callbackExample, &exitCode)) {
+        Log(L"[-] Failed to map " << path << std::endl);
+        intel_driver::Unload(iqvw64e_device_handle);
+        return false;
+    }
+
+    if (!intel_driver::Unload(iqvw64e_device_handle)) {
+        Log(L"[-] Warning failed to fully unload vulnerable driver " << std::endl);
+    }
+    Log(L"[+] success" << std::endl);
+    return true;
+}
+
 int main(){
     WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL, L"wtf", NULL };
     ::RegisterClassEx(&wc);
@@ -174,54 +221,10 @@ int main(){
                 ImGui::SetTooltip("pass allocation ptr as first param");
 
             if (ImGui::Button("Load",ImVec2(200,50))) {
-                if (!isFileExists(path)) { 
-                    MessageBox(0, L"File not exist", 0, 0);
+                if (!mapSYS()) {
+                    Log("\nTask Failed Successfully :)");
                 }
-                else {
-                    SetUnhandledExceptionFilter(SimplestCrashHandler);
-
-                    wstream.str(L"");
-                    ZeroMemory(output, sizeof output);
-
-                    if (freeMode) {
-                        Log(L"[+] Free pool memory after usage enabled" << std::endl);
-                    }
-
-                    if (mdlMode) {
-                        Log(L"[+] Mdl memory usage enabled" << std::endl);
-                    }
-
-                    if (passAllocationPtr) {
-                        Log(L"[+] Pass Allocation Ptr as first param enabled" << std::endl);
-                    }
-
-                    iqvw64e_device_handle = intel_driver::Load();
-                    if (iqvw64e_device_handle == INVALID_HANDLE_VALUE) {
-                        MessageBox(0,L"An error occurred while loading the intel driver",0,0);
-                        return -1;
-                    }
-
-                    std::vector<uint8_t> raw_image = { 0 };
-                    if (!utils::ReadFileToMemory(path, &raw_image)) {
-                        Log(L"[-] Failed to read image to memory" << std::endl);
-                        intel_driver::Unload(iqvw64e_device_handle);
-                        return -1;
-                    }
-
-                    NTSTATUS exitCode = 0;
-                    if (!kdmapper::MapDriver(iqvw64e_device_handle, raw_image.data(), 0, 0, free, true, mdlMode, passAllocationPtr, callbackExample, &exitCode)) {
-                        Log(L"[-] Failed to map " << path << std::endl);
-                        intel_driver::Unload(iqvw64e_device_handle);
-                        return -1;
-                    }
-
-                    if (!intel_driver::Unload(iqvw64e_device_handle)) {
-                        Log(L"[-] Warning failed to fully unload vulnerable driver " << std::endl);
-                    }
-                    Log(L"[+] success" << std::endl);
-
-                    strcpy(output, wstring2string(wstream.str()).c_str());
-                }
+                strcpy(output, wstring2string(wstream.str()).c_str());
             }
 
             ImGui::Text("Output:");
