@@ -3537,7 +3537,7 @@ void ImGui::Shutdown()
     if (g.IO.Fonts && g.FontAtlasOwnedByContext)
     {
         g.IO.Fonts->Locked = false;
-        //会触发断点。反正程序都要结束了，干脆留给操作系统清理得了lol
+        //浼氳Е鍙戞柇鐐广�傚弽姝ｇ▼搴忛兘瑕佺粨鏉熶簡锛屽共鑴嗙暀缁欐搷浣滅郴缁熸竻鐞嗗緱浜唋ol
         //IM_DELETE(g.IO.Fonts);
     }
     g.IO.Fonts = NULL;
