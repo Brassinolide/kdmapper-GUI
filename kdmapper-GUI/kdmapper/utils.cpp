@@ -13,7 +13,7 @@ std::wstring utils::GetFullTempPath() {
 	return std::wstring(temp_directory);
 }
 
-bool utils::ReadFileToMemory(const std::string& file_path, std::vector<uint8_t>* out_buffer) {
+bool utils::ReadFileToMemory(const std::wstring& file_path, std::vector<uint8_t>* out_buffer) {
 	std::ifstream file_ifstream(file_path, std::ios::binary);
 
 	if (!file_ifstream)

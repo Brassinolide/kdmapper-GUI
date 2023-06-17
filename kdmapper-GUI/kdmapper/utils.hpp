@@ -27,7 +27,7 @@ extern std::wstringstream wstream;
 namespace utils
 {
 	std::wstring GetFullTempPath();
-	bool ReadFileToMemory(const std::string& file_path, std::vector<uint8_t>* out_buffer);
+	bool ReadFileToMemory(const std::wstring& file_path, std::vector<uint8_t>* out_buffer);
 	bool CreateFileFromMemory(const std::wstring& desired_file_path, const char* address, size_t size);
 	uint64_t GetKernelModuleAddress(const std::string& module_name);
 	BOOLEAN bDataCompare(const BYTE* pData, const BYTE* bMask, const char* szMask);
