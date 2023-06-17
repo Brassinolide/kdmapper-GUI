@@ -3537,7 +3537,8 @@ void ImGui::Shutdown()
     if (g.IO.Fonts && g.FontAtlasOwnedByContext)
     {
         g.IO.Fonts->Locked = false;
-        IM_DELETE(g.IO.Fonts);
+        //会触发断点。反正程序都要结束了，干脆留给操作系统清理得了lol
+        //IM_DELETE(g.IO.Fonts);
     }
     g.IO.Fonts = NULL;
     g.DrawListSharedData.TempBuffer.clear();

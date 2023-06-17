@@ -26,36 +26,47 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 bool freeMode = false;
 bool mdlMode = false;
 bool passAllocationPtr = false;
-char path[1000] = "";
-char output[3000] = "";
+WCHAR path[MAX_PATH];
+char path_c[MAX_PATH];
 std::wstringstream wstream;
+
+string outbuf;
 
 HANDLE iqvw64e_device_handle;
 
-string Select() {
-    OPENFILENAMEA ofn;
-    char szFile[300];
-    ZeroMemory(&ofn, sizeof(ofn));
+char* WCHAR2CHAR(WCHAR* w) {
+    int len = WideCharToMultiByte(CP_ACP, 0, w, -1, NULL, 0, NULL, NULL);
+    char* buffer = new char[len + 1];
+    WideCharToMultiByte(CP_ACP, 0, w, -1, buffer, len, NULL, NULL);
+    buffer[len] = '\0';
+    return buffer;
+}
+
+bool Select() {
+    ZeroMemory(path, sizeof(path));
+    OPENFILENAMEW ofn = {0};
     ofn.lStructSize = sizeof(ofn);
     ofn.hwndOwner = NULL;
-    ofn.lpstrFile = szFile;
-    ofn.lpstrFile[0] = '\0';
+    ofn.lpstrFile = path;
     ofn.nFilterIndex = 1;
-    ofn.nMaxFile = sizeof(szFile);
-    ofn.lpstrFilter = "SYS File\0*.sys";
+    ofn.nMaxFile = sizeof(path);
+    ofn.lpstrFilter = L"SYS File\0*.sys";
     ofn.lpstrFileTitle = NULL;
     ofn.nMaxFileTitle = 0;
     ofn.lpstrInitialDir = NULL;
     ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
-    if (GetOpenFileNameA(&ofn)) {
-        return ofn.lpstrFile;
+    if (GetOpenFileNameW(&ofn)) {
+        char* ptr = WCHAR2CHAR(path);
+        strcpy_s(path_c, MAX_PATH, ptr);
+        delete[]ptr;
+        return true;
     }
     else {
-        return "";
+        return false;
     }
 }
 
-bool inline isFileExists(const char* file) {
+bool inline isFileExists(const WCHAR* file) {
     ifstream f(file);
     return f.good();
 }
@@ -102,13 +113,13 @@ string wstring2string(wstring wstr){
 }
 
 bool mapSYS() {
+    SetUnhandledExceptionFilter(SimplestCrashHandler);
     wstream.str(L"");
-    ZeroMemory(output, sizeof output);
+    outbuf = "";
     if (!isFileExists(path)) {
         Log(L"File not exist\n");
         return false;
     }
-    SetUnhandledExceptionFilter(SimplestCrashHandler);
 
     if (freeMode) {
         Log(L"[+] Free pool memory after usage enabled" << std::endl);
@@ -169,8 +180,8 @@ int main(){
     ImGui_ImplWin32_Init(hwnd);
     ImGui_ImplDX9_Init(g_pd3dDevice);
 
-    ImFont* font = io.Fonts->AddFontFromMemoryTTF(seguihis, seguihis_size, 21.0f);
-
+    ImFont* font = io.Fonts->AddFontFromMemoryTTF(seguihis, 1400724, 21.0f);
+    
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     bool done = false;
     while (!done)
@@ -199,11 +210,12 @@ int main(){
 
             ImGui::Text("driver: ");
             ImGui::SameLine();
-            ImGui::InputText(" ", path, IM_ARRAYSIZE(path), ImGuiInputTextFlags_ReadOnly);
+            ImGui::InputText(" ", path_c, IM_ARRAYSIZE(path_c), ImGuiInputTextFlags_ReadOnly);
             ImGui::SameLine();
             if (ImGui::Button("Select")) {
-                string s = Select();
-                strncpy(path, s.c_str(), s.length() + 1); 
+                if (Select()) {
+
+                }
             }
 
             ImGui::Checkbox("free", &freeMode);
@@ -224,12 +236,13 @@ int main(){
                 if (!mapSYS()) {
                     Log("\nTask Failed Successfully :)");
                 }
-                strcpy(output, wstring2string(wstream.str()).c_str());
+
+                outbuf = wstring2string(wstream.str()).c_str();
             }
 
             ImGui::Text("Output:");
 
-            ImGui::InputTextMultiline("##source", output, IM_ARRAYSIZE(output), ImVec2(-FLT_MIN, ImGui::GetTextLineHeight() * 16), ImGuiInputTextFlags_ReadOnly);
+            ImGui::InputTextMultiline("##source", (char*)outbuf.c_str(), 3000, ImVec2(-FLT_MIN, ImGui::GetTextLineHeight() * 16), ImGuiInputTextFlags_ReadOnly);
 
             ImGui::PopFont();
             ImGui::End();
